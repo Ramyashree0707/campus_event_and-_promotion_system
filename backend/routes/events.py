@@ -275,10 +275,16 @@ def delete_event(event_id):
         if current_user['role'] != 'admin' and event['organizer_id'] != current_user['user_id']:
             return jsonify({'success': False, 'message': 'Access denied'}), 403
 
+        # ✅ Delete bookings first before deleting event
+        cursor.execute('DELETE FROM bookings WHERE event_id = %s', (event_id,))
+
+        # ✅ Now delete the event
         cursor.execute('DELETE FROM events WHERE id = %s', (event_id,))
+
         db.commit()
         cursor.close()
         db.close()
         return jsonify({'success': True, 'message': 'Event deleted'})
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500

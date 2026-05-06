@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from utils.email_service import send_receipt_email
+
 from db import mysql
 import MySQLdb.cursors
 import random
@@ -307,7 +308,8 @@ def send_receipt():
             SELECT b.id as booking_id, b.booking_confirmation_code,
                    b.payment_status, u.name as user_name,
                    e.name as event_name, e.date as event_date,
-                   e.time as event_time, e.venue
+                   e.time as event_time, e.venue as event_location,
+                   e.price as event_price
             FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN events e ON b.event_id = e.id
@@ -320,11 +322,17 @@ def send_receipt():
         if not receipt:
             return jsonify({"error": "Booking not found"}), 404
 
-        return jsonify({"message": "Receipt sent to email", "email": user_email}), 200
+        # ✅ actually send email
+        success = send_receipt_email(user_email, receipt)
+
+        if success:
+            return jsonify({"message": "Receipt sent to email!"}), 200
+        else:
+            return jsonify({"error": "Failed to send email"}), 500
 
     except Exception as e:
         print("SEND RECEIPT ERROR:", e)
-        return jsonify({"error": "Failed to send receipt"}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 # ================= CANCEL BOOKING =================
